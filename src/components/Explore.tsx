@@ -25,6 +25,8 @@ export const Explore: React.FC<ExploreProps> = ({
   // Filter variables
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+  // Track image load errors to render clean dynamic fallbacks
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
   // Extract separate parent (e.g. parent_id === null) and child categories
   const parentCategories = useMemo(() => {
@@ -137,15 +139,15 @@ export const Explore: React.FC<ExploreProps> = ({
                   <button
                     key={parent.id}
                     onClick={() => handleParentSelect(parent.id)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-between cursor-pointer ${
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-between gap-2 cursor-pointer ${
                       selectedParentId === parent.id
                         ? 'bg-blue-50 text-blue-700 font-bold border border-blue-100 shadow-sm'
-                        : 'text-slate-650 hover:bg-slate-50'
+                        : 'text-slate-600 hover:bg-slate-55 hover:bg-slate-50'
                     }`}
                   >
-                    <span className="truncate">{parent.name}</span>
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                      selectedParentId === parent.id ? 'bg-blue-250 bg-blue-200 text-blue-800' : 'bg-slate-100 text-slate-505 text-slate-500'
+                    <span className="truncate text-left flex-1 min-w-0" title={parent.name}>{parent.name}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold shrink-0 ${
+                      selectedParentId === parent.id ? 'bg-blue-200 text-blue-800' : 'bg-slate-100 text-slate-500'
                     }`}>
                       {docCount}
                     </span>
@@ -181,14 +183,14 @@ export const Explore: React.FC<ExploreProps> = ({
                     <button
                       key={child.id}
                       onClick={() => setSelectedChildId(child.id)}
-                      className={`text-left px-3 py-2 rounded-lg text-xs transition-all flex items-center justify-between cursor-pointer ${
+                      className={`text-left px-3 py-2 rounded-lg text-xs transition-all flex items-center justify-between gap-2 w-full cursor-pointer ${
                         selectedChildId === child.id
-                          ? 'bg-indigo-50 border border-indigo-150 text-indigo-700 font-semibold'
+                          ? 'bg-indigo-50 border border-indigo-150 text-indigo-700 font-semibold shadow-sm'
                           : 'text-slate-600 hover:bg-slate-50 border border-transparent'
                       }`}
                     >
-                      <span className="truncate">{child.name}</span>
-                      <span className="text-[10px] text-slate-400 font-mono">({childCount})</span>
+                      <span className="truncate text-left flex-1 min-w-0" title={child.name}>{child.name}</span>
+                      <span className="text-[10px] text-slate-400 font-mono shrink-0 font-medium">({childCount})</span>
                     </button>
                   );
                 })}
@@ -293,22 +295,29 @@ export const Explore: React.FC<ExploreProps> = ({
                     )}
                     
                     {/* Upper Thumbnail Section */}
-                    <div className="relative h-40 w-full bg-slate-100 rounded-xl overflow-hidden mb-3">
-                      {doc.image_url ? (
+                    <div className="relative h-40 w-full bg-slate-100 rounded-xl overflow-hidden mb-3 flex items-center justify-center">
+                      {doc.image_url && !imageErrors[doc.id] ? (
                         <img
                           src={doc.image_url}
                           alt={doc.title}
                           referrerPolicy="no-referrer"
+                          onError={() => setImageErrors(prev => ({ ...prev, [doc.id]: true }))}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-tr from-slate-100 to-slate-200 flex items-center justify-center text-slate-400">
-                          <BookOpen className="w-10 h-10 text-slate-350" />
+                        <div className="w-full h-full bg-gradient-to-tr from-slate-100 via-indigo-50/40 to-blue-50/50 flex flex-col items-center justify-center text-slate-400 p-4 gap-2 border border-slate-100 rounded-xl">
+                          <BookOpen className="w-10 h-10 text-indigo-400/80 animate-pulse duration-2000" />
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider text-center line-clamp-1 max-w-[85%]">
+                            {category ? category.name : 'Tài liệu học tập'}
+                          </span>
                         </div>
                       )}
                       
                       {/* Floating Category Tag */}
-                      <span className="absolute top-2 left-2 bg-white/95 backdrop-blur-sm shadow-sm text-slate-800 text-[9px] font-extrabold px-2 py-1 rounded uppercase tracking-wider border border-slate-150">
+                      <span 
+                        className="absolute top-2 left-2 bg-white/95 backdrop-blur-sm shadow-sm text-slate-800 text-[9px] font-extrabold px-2 py-1 rounded uppercase tracking-wider border border-slate-150 max-w-[65%] truncate"
+                        title={category ? category.name : 'Miễn phí'}
+                      >
                         {category ? category.name : 'Miễn phí'}
                       </span>
 
