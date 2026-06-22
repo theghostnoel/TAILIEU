@@ -10,50 +10,50 @@ import { Header } from './components/Header';
 import { Explore } from './components/Explore';
 import { DocumentModal } from './components/DocumentModal';
 import { AdminPanel } from './components/AdminPanel';
+import { 
+  seedInitialDataIfEmpty, 
+  subscribeCategories, 
+  subscribeDocuments 
+} from './firebase';
 import { BookOpen, Sparkles, FolderDown, Zap, Users } from 'lucide-react';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<'explore' | 'admin'>('explore');
   const [searchQuery, setSearchQuery] = useState('');
   
-  // State backing categories and documents, initialized with local persistence
+  // State backing categories and documents, synchronized with Cloud Firestore in real-time
   const [categories, setCategories] = useState<Category[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
 
   useEffect(() => {
-    // Read persisted categories
-    const storedCats = localStorage.getItem('docsharing_categories');
-    if (storedCats) {
-      try {
-        setCategories(JSON.parse(storedCats));
-      } catch (err) {
-        setCategories(INITIAL_CATEGORIES);
-      }
-    } else {
-      setCategories(INITIAL_CATEGORIES);
-      localStorage.setItem('docsharing_categories', JSON.stringify(INITIAL_CATEGORIES));
-    }
+    // 1. Seed default items into Cloud Firestore if the database is blank
+    const initFirebaseData = async () => {
+      await seedInitialDataIfEmpty();
+    };
+    initFirebaseData();
 
-    // Read persisted documents
-    const storedDocs = localStorage.getItem('docsharing_documents');
-    if (storedDocs) {
-      try {
-        setDocuments(JSON.parse(storedDocs));
-      } catch (err) {
-        setDocuments(INITIAL_DOCUMENTS);
-      }
-    } else {
-      setDocuments(INITIAL_DOCUMENTS);
-      localStorage.setItem('docsharing_documents', JSON.stringify(INITIAL_DOCUMENTS));
-    }
+    // 2. Subscribe to real-time additions/modifications of Categories in Firestore
+    const unsubscribeCats = subscribeCategories((updatedCats) => {
+      setCategories(updatedCats);
+    });
+
+    // 3. Subscribe to real-time additions/modifications of Documents in Firestore
+    const unsubscribeDocs = subscribeDocuments((updatedDocs) => {
+      setDocuments(updatedDocs);
+    });
 
     // Check if admin is currently signed in
     const storedAdmin = localStorage.getItem('docsharing_admin_session');
     if (storedAdmin === 'active-session') {
       setIsAdminLoggedIn(true);
     }
+
+    return () => {
+      unsubscribeCats();
+      unsubscribeDocs();
+    };
   }, []);
 
   // Sync admin state

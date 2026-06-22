@@ -1,0 +1,41 @@
+{
+  "entities": {
+    "Category": {
+      "title": "Category",
+      "description": "A document category or subcategory",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique ID of the category" },
+        "name": { "type": "string", "description": "Display name of the category" },
+        "parent_id": { "type": ["string", "null"], "description": "Optional parent category ID to support nested hierarchy" },
+        "community_link": { "type": ["string", "null"], "description": "Optional social media or chat community group link" }
+      },
+      "required": ["id", "name"]
+    },
+    "Document": {
+      "title": "Document",
+      "description": "An educational resource or document shared in the vault",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique ID of the document" },
+        "title": { "type": "string", "description": "Title of the document" },
+        "description": { "type": "string", "description": "A summary or description of the document contents" },
+        "image_url": { "type": "string", "description": "Cover or thumbnail image URL" },
+        "file_url": { "type": "string", "description": "Target download page or file storage URL (e.g., Google Drive)" },
+        "category_id": { "type": "string", "description": "Category ID the document belongs to" },
+        "created_at": { "type": "string", "format": "date-time", "description": "ISO timestamp when the document was published" }
+      },
+      "required": ["id", "title", "description", "image_url", "file_url", "category_id", "created_at"]
+    }
+  },
+  "firestore": {
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Store all document and exam categories in a flat or child list"
+    },
+    "/documents/{documentId}": {
+      "schema": "Document",
+      "description": "Store all curriculum notes, exam prep, codings, physical sheets, and English materials"
+    }
+  }
+}

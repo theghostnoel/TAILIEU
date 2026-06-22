@@ -9,6 +9,12 @@ import {
   ShieldAlert, LogIn, Plus, Trash2, FolderPlus, FilePlus, Sparkles, 
   HelpCircle, Image as ImageIcon, Link2, FileText, CheckCircle2, ChevronRight, X, Edit3
 } from 'lucide-react';
+import {
+  saveCategoryToFirestore,
+  deleteCategoryFromFirestore,
+  saveDocumentToFirestore,
+  deleteDocumentFromFirestore
+} from '../firebase';
 
 interface AdminPanelProps {
   categories: Category[];
@@ -135,27 +141,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       return;
     }
 
-    setDocuments(prev => {
-      const updated = prev.map(d => {
-        if (d.id === editingDocId) {
-          return {
-            ...d,
-            title: editDocTitle.trim(),
-            description: editDocDesc.trim(),
-            category_id: editDocCategoryId,
-            image_url: editDocImageUrl.trim(),
-            file_url: editDocFileUrl.trim()
-          };
-        }
-        return d;
+    const docToUpdate = documents.find(d => d.id === editingDocId);
+    if (docToUpdate) {
+      const updated: Document = {
+        ...docToUpdate,
+        title: editDocTitle.trim(),
+        description: editDocDesc.trim(),
+        category_id: editDocCategoryId,
+        image_url: editDocImageUrl.trim(),
+        file_url: editDocFileUrl.trim()
+      };
+      saveDocumentToFirestore(updated).then(() => {
+        setDocMessage('✓ Cập nhật tài liệu thành công!');
+        setTimeout(() => setDocMessage(''), 4000);
+      }).catch(err => {
+        console.error(err);
+        setDocMessage('❌ Có lỗi xảy ra khi lưu tài liệu!');
       });
-      localStorage.setItem('docsharing_documents', JSON.stringify(updated));
-      return updated;
-    });
+    }
 
     setEditingDocId(null);
-    setDocMessage('✓ Cập nhật tài liệu thành công!');
-    setTimeout(() => setDocMessage(''), 4000);
   };
 
   // Filter child categories for selectors
@@ -207,17 +212,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       community_link: newCatCommunityLink.trim() === '' ? null : newCatCommunityLink.trim(),
     };
 
-    setCategories(prev => {
-      const updated = [...prev, newCategory];
-      localStorage.setItem('docsharing_categories', JSON.stringify(updated));
-      return updated;
+    saveCategoryToFirestore(newCategory).then(() => {
+      setNewCatName('');
+      setNewCatParentId('');
+      setNewCatCommunityLink('');
+      setCatMessage('✓ Thêm danh mục thành công!');
+      setTimeout(() => setCatMessage(''), 3000);
+    }).catch(err => {
+      console.error(err);
+      setCatMessage('❌ Không thể thêm danh mục!');
     });
-
-    setNewCatName('');
-    setNewCatParentId('');
-    setNewCatCommunityLink('');
-    setCatMessage('✓ Thêm danh mục thành công!');
-    setTimeout(() => setCatMessage(''), 3000);
   };
 
   // Delete Category Handler
@@ -226,18 +230,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const executeDeleteCategory = (id: string) => {
-    setCategories(prev => {
-      const updated = prev.filter(c => c.id !== id);
-      localStorage.setItem('docsharing_categories', JSON.stringify(updated));
-      return updated;
+    deleteCategoryFromFirestore(id).then(() => {
+      setCatMessage('✓ Xoá danh mục thành công!');
+      setTimeout(() => setCatMessage(''), 3000);
+    }).catch(err => {
+      console.error(err);
+      setCatMessage('❌ Không thể xoá danh mục!');
     });
-    setDocuments(prev => {
-      const updated = prev.filter(d => d.category_id !== id);
-      localStorage.setItem('docsharing_documents', JSON.stringify(updated));
-      return updated;
-    });
-    setCatMessage('✓ Xoá danh mục thành công!');
-    setTimeout(() => setCatMessage(''), 3000);
   };
 
   // simulated Supabase image upload trigger
@@ -313,21 +312,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       created_at: new Date().toISOString(),
     };
 
-    setDocuments(prev => {
-      const updated = [...prev, newDocument];
-      localStorage.setItem('docsharing_documents', JSON.stringify(updated));
-      return updated;
+    saveDocumentToFirestore(newDocument).then(() => {
+      // Reset Form
+      setNewDocTitle('');
+      setNewDocDesc('');
+      setNewDocCategoryId('');
+      setNewDocImageUrl('');
+      setNewDocFileUrl('');
+      setUploadSuccess(false);
+      setDocMessage('✓ Đăng tài liệu thành công và đã hiển thị ở Kho tài liệu!');
+      setTimeout(() => setDocMessage(''), 4000);
+    }).catch(err => {
+      console.error(err);
+      setDocMessage('❌ Có lỗi xảy ra khi đăng tài liệu!');
     });
-
-    // Reset Form
-    setNewDocTitle('');
-    setNewDocDesc('');
-    setNewDocCategoryId('');
-    setNewDocImageUrl('');
-    setNewDocFileUrl('');
-    setUploadSuccess(false);
-    setDocMessage('✓ Đăng tài liệu thành công và đã hiển thị ở Kho tài liệu!');
-    setTimeout(() => setDocMessage(''), 4000);
   };
 
   // Delete Document Handler
@@ -336,13 +334,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const executeDeleteDocument = (id: string) => {
-    setDocuments(prev => {
-      const updated = prev.filter(d => d.id !== id);
-      localStorage.setItem('docsharing_documents', JSON.stringify(updated));
-      return updated;
+    deleteDocumentFromFirestore(id).then(() => {
+      setDocMessage('✓ Đã gỡ tài liệu thành công!');
+      setTimeout(() => setDocMessage(''), 3000);
+    }).catch(err => {
+      console.error(err);
+      setDocMessage('❌ Có lỗi xảy ra khi gỡ tài liệu!');
     });
-    setDocMessage('✓ Đã gỡ tài liệu thành công!');
-    setTimeout(() => setDocMessage(''), 3000);
   };
 
   // Show login form if not authenticated
