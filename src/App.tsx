@@ -217,14 +217,14 @@ export default function App() {
           </div>
           
           <div className="mt-5 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[10.5px] text-slate-400 font-mono">
-            <span>© 2026 StudyShare. Phát triển trên Google AI Studio Workspace.</span>
+            <span>© 2026 tongtailieu. Tổng kho tài liệu học tập chất lượng cao.</span>
             <div className="flex items-center justify-center sm:justify-end gap-2.5">
               <span className="inline-flex items-center gap-1.5">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                 <span>Hệ thống: Hoạt động bình thường</span>
               </span>
               <span className="text-slate-200">|</span>
-              <span>Bản dựng High Density v2.1</span>
+              <span>Bản dựng Premium v2.2</span>
             </div>
           </div>
         </div>

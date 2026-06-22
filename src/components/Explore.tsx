@@ -142,7 +142,7 @@ export const Explore: React.FC<ExploreProps> = ({
                     className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-between gap-2 cursor-pointer ${
                       selectedParentId === parent.id
                         ? 'bg-blue-50 text-blue-700 font-bold border border-blue-100 shadow-sm'
-                        : 'text-slate-600 hover:bg-slate-55 hover:bg-slate-50'
+                        : 'text-slate-600 hover:bg-slate-50'
                     }`}
                   >
                     <span className="truncate text-left flex-1 min-w-0" title={parent.name}>{parent.name}</span>
@@ -299,7 +299,7 @@ export const Explore: React.FC<ExploreProps> = ({
                       {doc.image_url && !imageErrors[doc.id] ? (
                         <img
                           src={doc.image_url}
-                          alt={doc.title}
+                          alt=""
                           referrerPolicy="no-referrer"
                           onError={() => setImageErrors(prev => ({ ...prev, [doc.id]: true }))}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -315,7 +315,7 @@ export const Explore: React.FC<ExploreProps> = ({
                       
                       {/* Floating Category Tag */}
                       <span 
-                        className="absolute top-2 left-2 bg-white/95 backdrop-blur-sm shadow-sm text-slate-800 text-[9px] font-extrabold px-2 py-1 rounded uppercase tracking-wider border border-slate-150 max-w-[65%] truncate"
+                        className="absolute top-2 left-2 bg-white/95 backdrop-blur-sm shadow-sm text-slate-800 text-[9px] font-extrabold px-2 py-1 rounded uppercase tracking-wider border border-slate-150 max-w-[70%] inline-block truncate"
                         title={category ? category.name : 'Miễn phí'}
                       >
                         {category ? category.name : 'Miễn phí'}
