@@ -1,0 +1,6 @@
+{
+  "name": "Website Chia Sẻ Tài Liệu",
+  "description": "Nền tảng chia sẻ tài liệu học tập lớp học trực quan với công nghệ bẫy link cộng đồng thông minh.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
