@@ -132,8 +132,53 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [isUploadingEditImage, setIsUploadingEditImage] = useState(false);
   const [uploadEditProgress, setUploadEditProgress] = useState(0);
 
+  // Category Editing states
+  const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [editCatName, setEditCatName] = useState('');
+  const [editCatParentId, setEditCatParentId] = useState<string>('');
+  const [editCatCommunityLink, setEditCatCommunityLink] = useState('');
+
   // Delete Confirmation State
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'category' | 'document'; id: string; name: string } | null>(null);
+
+  const handleStartEditCategory = (cat: Category) => {
+    setEditingCatId(cat.id);
+    setEditCatName(cat.name);
+    setEditCatParentId(cat.parent_id || '');
+    setEditCatCommunityLink(cat.community_link || '');
+  };
+
+  const handleCancelEditCategory = () => {
+    setEditingCatId(null);
+    setEditCatName('');
+    setEditCatParentId('');
+    setEditCatCommunityLink('');
+  };
+
+  const handleSaveEditCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editCatName.trim()) {
+      setCatMessage('Vui lòng nhập tên danh mục!');
+      return;
+    }
+    const catToUpdate = categories.find(c => c.id === editingCatId);
+    if (catToUpdate) {
+      const updated: Category = {
+        ...catToUpdate,
+        name: editCatName.trim(),
+        parent_id: editCatParentId === '' ? null : editCatParentId,
+        community_link: editCatCommunityLink.trim() === '' ? null : editCatCommunityLink.trim()
+      };
+      saveCategoryToFirestore(updated).then(() => {
+        setCatMessage('✓ Cập nhật danh mục thành công!');
+        handleCancelEditCategory();
+        setTimeout(() => setCatMessage(''), 3000);
+      }).catch(err => {
+        console.error(err);
+        setCatMessage('❌ Không thể lưu danh mục chỉnh sửa!');
+      });
+    }
+  };
 
   const handleStartEdit = (doc: Document) => {
     setEditingDocId(doc.id);
@@ -526,61 +571,126 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       {activeAdminSubTab === 'categories' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-200">
           
-          {/* Form Create Categories (35% columns) */}
+          {/* Form Create or Edit Categories (35% columns) */}
           <div className="lg:col-span-5 space-y-6">
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
-              <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <FolderPlus className="w-5 h-5 text-blue-600" />
-                <span>Tạo Danh Mục Mới</span>
-              </h2>
+            {editingCatId ? (
+              <div className="bg-white rounded-2xl border-2 border-indigo-500 p-6 shadow-sm animate-in fade-in zoom-in-95 duration-200">
+                <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <Edit3 className="w-5 h-5 text-indigo-600 animate-pulse" />
+                  <span>Chỉnh Sửa Danh Mục</span>
+                </h2>
 
-              <form onSubmit={handleAddCategory} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-705 mb-1 text-slate-600">
-                    Tên Danh Mục (Ví dụ: &quot;Toán học 2k9&quot;)*
-                  </label>
-                  <input
-                    id="new-category-name"
-                    type="text"
-                    placeholder="Nhập tên danh mục tài liệu..."
-                    value={newCatName}
-                    onChange={(e) => setNewCatName(e.target.value)}
-                    className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-350"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-705 mb-1 text-slate-600">
-                    Đường liên kết Bẫy (Facebook Group / Zalo)*
-                  </label>
-                  <input
-                    id="new-category-community-link"
-                    type="url"
-                    placeholder="https://facebook.com/groups/..."
-                    value={newCatCommunityLink}
-                    onChange={(e) => setNewCatCommunityLink(e.target.value)}
-                    className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                  />
-                </div>
-
-                {catMessage && (
-                  <div className={`p-2.5 rounded-xl text-xs font-bold ${
-                    catMessage.startsWith('✓') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'
-                  }`}>
-                    {catMessage}
+                <form onSubmit={handleSaveEditCategory} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-705 mb-1 text-slate-600">
+                      Tên Danh Mục*
+                    </label>
+                    <input
+                      id="edit-category-name"
+                      type="text"
+                      required
+                      placeholder="Nhập tên danh mục tài liệu..."
+                      value={editCatName}
+                      onChange={(e) => setEditCatName(e.target.value)}
+                      className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-350"
+                    />
                   </div>
-                )}
 
-                <button
-                  id="submit-add-category"
-                  type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl transition-all text-xs cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Xác nhận thêm Danh mục</span>
-                </button>
-              </form>
-            </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-705 mb-1 text-slate-600">
+                      Đường liên kết Bẫy (Facebook Group / Zalo)
+                    </label>
+                    <input
+                      id="edit-category-community-link"
+                      type="url"
+                      placeholder="https://facebook.com/groups/..."
+                      value={editCatCommunityLink}
+                      onChange={(e) => setEditCatCommunityLink(e.target.value)}
+                      className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
+                    />
+                  </div>
+
+                  {catMessage && (
+                    <div className={`p-2.5 rounded-xl text-xs font-bold ${
+                      catMessage.startsWith('✓') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'
+                    }`}>
+                      {catMessage}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCancelEditCategory}
+                      className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-xl transition-all text-xs cursor-pointer text-center"
+                    >
+                      Hủy bỏ
+                    </button>
+                    <button
+                      id="submit-save-category"
+                      type="submit"
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl transition-all text-xs cursor-pointer flex items-center justify-center gap-1"
+                    >
+                      <span>Lưu thay đổi</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+                <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <FolderPlus className="w-5 h-5 text-blue-600" />
+                  <span>Tạo Danh Mục Mới</span>
+                </h2>
+
+                <form onSubmit={handleAddCategory} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-705 mb-1 text-slate-600">
+                      Tên Danh Mục (Ví dụ: &quot;Toán học 2k9&quot;)*
+                    </label>
+                    <input
+                      id="new-category-name"
+                      type="text"
+                      placeholder="Nhập tên danh mục tài liệu..."
+                      value={newCatName}
+                      onChange={(e) => setNewCatName(e.target.value)}
+                      className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-350"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-705 mb-1 text-slate-600">
+                      Đường liên kết Bẫy (Facebook Group / Zalo)*
+                    </label>
+                    <input
+                      id="new-category-community-link"
+                      type="url"
+                      placeholder="https://facebook.com/groups/..."
+                      value={newCatCommunityLink}
+                      onChange={(e) => setNewCatCommunityLink(e.target.value)}
+                      className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
+                    />
+                  </div>
+
+                  {catMessage && (
+                    <div className={`p-2.5 rounded-xl text-xs font-bold ${
+                      catMessage.startsWith('✓') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'
+                    }`}>
+                      {catMessage}
+                    </div>
+                  )}
+
+                  <button
+                    id="submit-add-category"
+                    type="submit"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl transition-all text-xs cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Xác nhận thêm Danh mục</span>
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
 
           {/* List Categories structure (65% columns) */}
@@ -613,13 +723,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           </span>
                         </div>
 
-                        <button
-                          onClick={() => handleDeleteCategory(cat.id, cat.name)}
-                          className="p-2 hover:bg-rose-50 text-slate-400 hover:text-red-500 rounded-xl border border-transparent hover:border-red-150 transition-all cursor-pointer shrink-0"
-                          title="Xoá danh mục"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => handleStartEditCategory(cat)}
+                            className="p-2 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-xl border border-transparent hover:border-indigo-150 transition-all cursor-pointer"
+                            title="Sửa danh mục"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                            className="p-2 hover:bg-rose-50 text-slate-400 hover:text-red-500 rounded-xl border border-transparent hover:border-red-150 transition-all cursor-pointer"
+                            title="Xoá danh mục"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     );
                   })
