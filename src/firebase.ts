@@ -162,3 +162,32 @@ export async function saveDocumentToFirestore(document: Document) {
 export async function deleteDocumentFromFirestore(documentId: string) {
   await deleteDoc(doc(db, DOCUMENTS_COLLECTION, documentId));
 }
+
+/**
+ * Subscribe to real-time changes of Sponsor text
+ */
+export function subscribeSponsorText(onUpdate: (text: string) => void) {
+  const docRef = doc(db, 'settings', 'sponsor');
+  return onSnapshot(docRef, (snapshot) => {
+    if (snapshot.exists()) {
+      const data = snapshot.data();
+      if (data && typeof data.text === 'string') {
+        onUpdate(data.text);
+      }
+    } else {
+      const defaultText = "🔥 HỆ THỐNG PHÁT HÀNH: Tổng kho tài liệu học tập toàn diện - Ngoại ngữ IELTS/HSK giao tiếp, bài tập thực hành Công nghệ & Lập trình Code nâng cao hoàn toàn miễn phí! Nhấn vào tài liệu bất kỳ rồi làm theo 2 bước hướng dẫn nhanh để tải bản gốc Google Drive cực kỳ mượt mà không quảng cáo bẫy.";
+      setDoc(docRef, { text: defaultText }).catch(err => console.error(err));
+      onUpdate(defaultText);
+    }
+  }, (err) => {
+    console.error('Error subscribing to sponsor text:', err);
+  });
+}
+
+/**
+ * Update Sponsor text in Firestore
+ */
+export async function saveSponsorTextToFirestore(text: string) {
+  const docRef = doc(db, 'settings', 'sponsor');
+  await setDoc(docRef, { text });
+}

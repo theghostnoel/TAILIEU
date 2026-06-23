@@ -18,6 +18,7 @@ export interface Document {
   file_url: string; // Drive/Mega link
   category_id: string;
   created_at: string;
+  subject?: string; // e.g. "Toán", "Ngữ Văn", "Vật Lý", "Hóa Học", "Sinh Học", "Lịch Sử", "Địa Lý", "Tiếng Anh", "Lập Trình", "Tin Học"
 }
 
 export interface SQLTemplate {

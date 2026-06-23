@@ -24,6 +24,7 @@ export const Explore: React.FC<ExploreProps> = ({
 }) => {
   // Filter variables
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const ITEMS_PER_PAGE = 15;
 
@@ -33,7 +34,12 @@ export const Explore: React.FC<ExploreProps> = ({
   // Reset page to 1 whenever filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategoryId, searchQuery]);
+    setSelectedSubject(null);
+  }, [selectedCategoryId]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedSubject, searchQuery]);
 
   // Filtered documents list
   const filteredDocuments = useMemo(() => {
@@ -43,17 +49,28 @@ export const Explore: React.FC<ExploreProps> = ({
         const query = searchQuery.toLowerCase();
         const matchesTitle = doc.title.toLowerCase().includes(query);
         const matchesDesc = doc.description.toLowerCase().includes(query);
-        if (!matchesTitle && !matchesDesc) return false;
+        const matchesSubject = doc.subject?.toLowerCase().includes(query) ?? false;
+        if (!matchesTitle && !matchesDesc && !matchesSubject) return false;
       }
 
       // 2. Filter by Category ID
-      if (selectedCategoryId) {
-        return doc.category_id === selectedCategoryId;
+      if (selectedCategoryId && doc.category_id !== selectedCategoryId) {
+        return false;
+      }
+
+      // 3. Filter by Subject Tag
+      if (selectedSubject) {
+        if (!doc.subject) return false;
+        const docSub = doc.subject.toLowerCase();
+        const targetSub = selectedSubject.toLowerCase();
+        if (!docSub.includes(targetSub) && !targetSub.includes(docSub)) {
+          return false;
+        }
       }
 
       return true;
     });
-  }, [documents, searchQuery, selectedCategoryId]);
+  }, [documents, searchQuery, selectedCategoryId, selectedSubject]);
 
   const totalPages = Math.ceil(filteredDocuments.length / ITEMS_PER_PAGE);
 
@@ -65,9 +82,24 @@ export const Explore: React.FC<ExploreProps> = ({
 
   const handleClearFilters = () => {
     setSelectedCategoryId(null);
+    setSelectedSubject(null);
     setSearchQuery('');
     setCurrentPage(1);
   };
+
+  // Dynamically compile active subjects from the document pool to ensure 100% synchronization
+  const uniqueSubjects = useMemo(() => {
+    const subs = documents
+      .map(d => d.subject?.trim())
+      .filter((sub): sub is string => !!sub);
+    const set = Array.from(new Set(subs));
+    
+    // Default fallback study tags if no documents have subjects loaded yet
+    if (set.length === 0) {
+      return ['Toán học', 'Ngữ Văn', 'Tiếng Anh/IELTS', 'Tiếng Trung', 'Sinh học', 'Lịch sử', 'Địa lý', 'Lập trình'];
+    }
+    return set;
+  }, [documents]);
 
   return (
     <div className="py-6 sm:py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" id="explore-documents-section">
@@ -133,6 +165,56 @@ export const Explore: React.FC<ExploreProps> = ({
                       selectedCategoryId === cat.id ? 'bg-blue-200 text-blue-800' : 'bg-slate-100 text-slate-500'
                     }`}>
                       {docCount}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Subjects (Môn học) selectors */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5 leading-none">
+              <Filter className="w-3.5 h-3.5 text-slate-400" />
+              <span>Môn Học / Chuyên Đề</span>
+            </h3>
+
+            <div className="flex flex-wrap gap-1.5 max-h-[250px] overflow-y-auto pr-1">
+              <button
+                onClick={() => setSelectedSubject(null)}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  selectedSubject === null
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-slate-50 text-slate-600 hover:bg-slate-105 hover:bg-slate-100 border border-slate-100'
+                }`}
+              >
+                Tất cả môn
+              </button>
+
+              {uniqueSubjects.map((sub) => {
+                const isSelected = selectedSubject === sub;
+                // Count documents with this subject in the pool (optionally respecting current selected category)
+                const count = documents.filter(d => {
+                  if (selectedCategoryId && d.category_id !== selectedCategoryId) return false;
+                  return d.subject?.toLowerCase() === sub.toLowerCase();
+                }).length;
+
+                return (
+                  <button
+                    key={sub}
+                    disabled={count === 0 && !isSelected}
+                    onClick={() => setSelectedSubject(sub)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer disabled:opacity-40 disabled:hover:bg-slate-50 disabled:cursor-not-allowed flex items-center gap-1 ${
+                      isSelected
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-100'
+                    }`}
+                  >
+                    <span>{sub}</span>
+                    <span className={`text-[9px] font-bold leading-none px-1 py-0.5 rounded-full ${
+                      isSelected ? 'bg-indigo-700 text-indigo-50' : 'bg-slate-200 text-slate-500'
+                    }`}>
+                      {count}
                     </span>
                   </button>
                 );
@@ -251,8 +333,13 @@ export const Explore: React.FC<ExploreProps> = ({
                       </div>
 
                       {/* Lower Description Section */}
-                      <div className="flex flex-col justify-between flex-1">
+                      <div className="flex flex-col justify-between flex-1 text-left">
                         <div className="space-y-1.5 mb-3.5">
+                          {doc.subject && (
+                            <span className="inline-flex items-center gap-1 bg-indigo-50 border border-indigo-100/60 text-indigo-700 text-[9.5px] font-bold px-2 py-0.5 rounded-lg mb-1 select-none">
+                              📚 {doc.subject}
+                            </span>
+                          )}
                           <h4 className="font-extrabold text-slate-900 text-xs sm:text-[13.5px] leading-snug group-hover:text-blue-600 transition-colors line-clamp-1">
                             {doc.title}
                           </h4>

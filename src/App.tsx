@@ -13,7 +13,8 @@ import { AdminPanel } from './components/AdminPanel';
 import { 
   seedInitialDataIfEmpty, 
   subscribeCategories, 
-  subscribeDocuments 
+  subscribeDocuments,
+  subscribeSponsorText
 } from './firebase';
 import { BookOpen, Sparkles, FolderDown, Zap, Users } from 'lucide-react';
 
@@ -24,6 +25,7 @@ export default function App() {
   // State backing categories and documents, synchronized with Cloud Firestore in real-time
   const [categories, setCategories] = useState<Category[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [sponsorText, setSponsorText] = useState('');
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
 
@@ -44,6 +46,11 @@ export default function App() {
       setDocuments(updatedDocs);
     });
 
+    // 4. Subscribe to dynamic sponsor text
+    const unsubscribeSponsor = subscribeSponsorText((text) => {
+      setSponsorText(text);
+    });
+
     // Check if admin is currently signed in
     const storedAdmin = localStorage.getItem('docsharing_admin_session');
     if (storedAdmin === 'active-session') {
@@ -53,6 +60,7 @@ export default function App() {
     return () => {
       unsubscribeCats();
       unsubscribeDocs();
+      unsubscribeSponsor();
     };
   }, []);
 
@@ -85,6 +93,7 @@ export default function App() {
         onLogout={handleLogout}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        sponsorText={sponsorText}
       />
 
       {/* Main Content Space */}
@@ -173,6 +182,7 @@ export default function App() {
             setDocuments={setDocuments}
             isAdminLoggedIn={isAdminLoggedIn}
             setIsAdminLoggedIn={handleAdminLoginStateChange}
+            sponsorText={sponsorText}
           />
         )}
 

@@ -17,6 +17,7 @@ interface HeaderProps {
   onLogout: () => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  sponsorText: string;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -26,6 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
   onLogout,
   searchQuery,
   setSearchQuery,
+  sponsorText,
 }) => {
   // Mobile menu toggle
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -238,7 +240,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Infinite Marquee text box */}
           <div className="flex-1 overflow-hidden relative ml-3 w-full h-5 flex items-center">
             <span className="text-[11px] sm:text-xs font-bold text-slate-950 animate-marquee select-all cursor-help block pl-4">
-              🔥 HỆ THỐNG PHÁT HÀNH: Tổng kho tài liệu học tập toàn diện - Ngoại ngữ IELTS/HSK giao tiếp, bài tập thực hành Công nghệ &amp; Lập trình Code nâng cao hoàn toàn miễn phí! Nhấn vào tài liệu bất kỳ rồi làm theo 2 bước hướng dẫn nhanh để tải bản gốc Google Drive cực kỳ mượt mà không quảng cáo bẫy.
+              {sponsorText || "🔥 HỆ THỐNG PHÁT HÀNH: Tổng kho tài liệu học tập toàn diện - Ngoại ngữ IELTS/HSK giao tiếp và Lập trình nâng cao miễn phí!"}
             </span>
           </div>
 

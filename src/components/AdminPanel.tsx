@@ -3,17 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Category, Document } from '../types';
 import { 
-  ShieldAlert, LogIn, Plus, Trash2, FolderPlus, FilePlus, Sparkles, 
+  ShieldAlert, LogIn, Plus, Trash2, FolderPlus, FilePlus, Sparkles, Megaphone,
   HelpCircle, Image as ImageIcon, Link2, FileText, CheckCircle2, ChevronRight, X, Edit3
 } from 'lucide-react';
 import {
   saveCategoryToFirestore,
   deleteCategoryFromFirestore,
   saveDocumentToFirestore,
-  deleteDocumentFromFirestore
+  deleteDocumentFromFirestore,
+  saveSponsorTextToFirestore
 } from '../firebase';
 
 interface AdminPanelProps {
@@ -23,6 +24,7 @@ interface AdminPanelProps {
   setDocuments: React.Dispatch<React.SetStateAction<Document[]>>;
   isAdminLoggedIn: boolean;
   setIsAdminLoggedIn: (loggedIn: boolean) => void;
+  sponsorText: string;
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({
@@ -32,6 +34,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   setDocuments,
   isAdminLoggedIn,
   setIsAdminLoggedIn,
+  sponsorText,
 }) => {
   // Login Form State
   const [email, setEmail] = useState('');
@@ -39,7 +42,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [loginError, setLoginError] = useState('');
 
   // Tab State
-  const [activeAdminSubTab, setActiveAdminSubTab] = useState<'categories' | 'documents'>('documents');
+  const [activeAdminSubTab, setActiveAdminSubTab] = useState<'categories' | 'documents' | 'sponsor'>('documents');
+
+  // Sponsor State
+  const [editedSponsorText, setEditedSponsorText] = useState(sponsorText);
+  const [sponsorMessage, setSponsorMessage] = useState('');
+  const [isSavingSponsor, setIsSavingSponsor] = useState(false);
+
+  // Sync edited sponsor text when database value loads
+  useEffect(() => {
+    setEditedSponsorText(sponsorText);
+  }, [sponsorText]);
 
   // Form States: New Category
   const [newCatName, setNewCatName] = useState('');
@@ -53,6 +66,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newDocCategoryId, setNewDocCategoryId] = useState('');
   const [newDocImageUrl, setNewDocImageUrl] = useState('');
   const [newDocFileUrl, setNewDocFileUrl] = useState('');
+  const [newDocSubject, setNewDocSubject] = useState('');
   const [docMessage, setDocMessage] = useState('');
 
   // Image Upload Simulator States
@@ -67,6 +81,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [editDocCategoryId, setEditDocCategoryId] = useState('');
   const [editDocImageUrl, setEditDocImageUrl] = useState('');
   const [editDocFileUrl, setEditDocFileUrl] = useState('');
+  const [editDocSubject, setEditDocSubject] = useState('');
   const [isUploadingEditImage, setIsUploadingEditImage] = useState(false);
   const [uploadEditProgress, setUploadEditProgress] = useState(0);
 
@@ -80,6 +95,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setEditDocCategoryId(doc.category_id);
     setEditDocImageUrl(doc.image_url);
     setEditDocFileUrl(doc.file_url);
+    setEditDocSubject(doc.subject || '');
     setUploadEditProgress(0);
     setIsUploadingEditImage(false);
   };
@@ -91,6 +107,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setEditDocCategoryId('');
     setEditDocImageUrl('');
     setEditDocFileUrl('');
+    setEditDocSubject('');
   };
 
   const handleEditImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,7 +166,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         description: editDocDesc.trim(),
         category_id: editDocCategoryId,
         image_url: editDocImageUrl.trim(),
-        file_url: editDocFileUrl.trim()
+        file_url: editDocFileUrl.trim(),
+        subject: editDocSubject.trim() || undefined
       };
       saveDocumentToFirestore(updated).then(() => {
         setDocMessage('✓ Cập nhật tài liệu thành công!');
@@ -310,6 +328,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       file_url: newDocFileUrl.trim(),
       category_id: newDocCategoryId,
       created_at: new Date().toISOString(),
+      subject: newDocSubject.trim() || undefined
     };
 
     saveDocumentToFirestore(newDocument).then(() => {
@@ -319,6 +338,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       setNewDocCategoryId('');
       setNewDocImageUrl('');
       setNewDocFileUrl('');
+      setNewDocSubject('');
       setUploadSuccess(false);
       setDocMessage('✓ Đăng tài liệu thành công và đã hiển thị ở Kho tài liệu!');
       setTimeout(() => setDocMessage(''), 4000);
@@ -419,24 +439,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       {/* Welcome Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 bg-gradient-to-r from-slate-900 to-slate-850 p-6 rounded-3xl text-white shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-1/4 w-40 h-40 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
-        <div className="flex items-center gap-3.5 z-10">
+        <div className="flex items-center gap-3.5 z-10 w-full sm:w-auto">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20 shrink-0">
             A
           </div>
           <div>
             <h1 className="text-lg sm:text-xl font-extrabold tracking-tight">Chào quay lại, Administrator!</h1>
-            <p className="text-slate-400 text-xs mt-0.5">Trang quản lý danh mục bẫy link cộng đồng và kho tài liệu học sinh.</p>
+            <p className="text-slate-400 text-xs mt-0.5">Trang quản lý danh mục và kho tài liệu học sinh.</p>
           </div>
         </div>
 
         {/* Subtabs controls inside banner */}
-        <div className="flex gap-2 z-10">
+        <div className="flex gap-2 z-10 flex-wrap">
           <button
             onClick={() => setActiveAdminSubTab('documents')}
             className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
               activeAdminSubTab === 'documents'
                 ? 'bg-white text-slate-900 shadow'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-750'
+                : 'bg-slate-800 text-slate-200 hover:bg-slate-750'
             }`}
           >
             Quản lý tài liệu ({documents.length})
@@ -447,10 +467,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
               activeAdminSubTab === 'categories'
                 ? 'bg-white text-slate-900 shadow'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-755'
+                : 'bg-slate-800 text-slate-200 hover:bg-slate-750'
             }`}
           >
             Quản lý danh mục ({categories.length})
+          </button>
+
+          <button
+            onClick={() => setActiveAdminSubTab('sponsor')}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+              activeAdminSubTab === 'sponsor'
+                ? 'bg-white text-slate-900 shadow'
+                : 'bg-slate-800 text-slate-200 hover:bg-slate-755'
+            }`}
+          >
+            Cấu hình tài trợ
           </button>
         </div>
       </div>
@@ -614,6 +645,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
 
                   <div>
+                    <label className="block text-xs font-bold text-slate-705 mb-1 text-slate-600">
+                      Môn học / Chuyên đề phụ (Ví dụ: Sinh học, Lịch sử, Địa lý, Toán, Lập trình...)
+                    </label>
+                    <input
+                      id="edit-document-subject"
+                      type="text"
+                      placeholder="Nhập tên môn học..."
+                      value={editDocSubject}
+                      onChange={(e) => setEditDocSubject(e.target.value)}
+                      className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-350"
+                    />
+                  </div>
+
+                  <div>
                     <label className="block text-xs font-bold text-slate-750 mb-1 text-slate-600">
                       Mô tả ngắn về tài liệu
                     </label>
@@ -767,6 +812,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         </option>
                       ))}
                     </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-705 mb-1 text-slate-600">
+                      Môn học / Chuyên đề phụ (Ví dụ: Sinh học, Lịch sử, Địa lý, Toán, Lập trình...)
+                    </label>
+                    <input
+                      id="new-document-subject"
+                      type="text"
+                      placeholder="Nhập tên môn học (e.g. Sinh học, Lịch sử)..."
+                      value={newDocSubject}
+                      onChange={(e) => setNewDocSubject(e.target.value)}
+                      className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-350"
+                    />
                   </div>
 
                   <div>
@@ -945,6 +1004,71 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* SUBTAB: SPONSOR TEXT CONFIGURATION */}
+      {activeAdminSubTab === 'sponsor' && (
+        <div className="max-w-3xl mx-auto bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm animate-in fade-in duration-200">
+          <div className="flex items-center gap-2 mb-4">
+            <Megaphone className="w-6 h-6 text-amber-500 animate-bounce" />
+            <h2 className="text-base sm:text-lg font-black text-slate-900">
+              Cấu hình tin tài trợ chạy ở đầu trang
+            </h2>
+          </div>
+          <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+            Nội dung tin tài trợ sẽ được cập nhật thời gian thực trên thanh thông báo chạy chữ liên tục phía đầu trang (Header) của website để thu hút sự chú ý của mọi học sinh truy cập.
+          </p>
+
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setIsSavingSponsor(true);
+            setSponsorMessage('');
+            try {
+              await saveSponsorTextToFirestore(editedSponsorText.trim());
+              setSponsorMessage('✓ Cập nhật tin tài trợ thành công!');
+              setTimeout(() => setSponsorMessage(''), 4000);
+            } catch (err) {
+              console.error(err);
+              setSponsorMessage('❌ Có lỗi xảy ra khi lưu tin tài trợ!');
+            } finally {
+              setIsSavingSponsor(false);
+            }
+          }} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5 label-required">
+                Nội dung dòng chữ truyền phát:*
+              </label>
+              <textarea
+                id="sponsor-text-input"
+                required
+                rows={5}
+                placeholder="Nhập dòng chữ quảng cáo/tin tài trợ học tập..."
+                value={editedSponsorText}
+                onChange={(e) => setEditedSponsorText(e.target.value)}
+                className="w-full px-4 py-3 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all font-medium placeholder:text-slate-350"
+              />
+            </div>
+
+            {sponsorMessage && (
+              <div className={`p-3.5 rounded-xl text-xs font-bold ${
+                sponsorMessage.includes('thành công') ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
+              }`}>
+                {sponsorMessage}
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2">
+              <button
+                id="submit-save-sponsor"
+                type="submit"
+                disabled={isSavingSponsor}
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-extrabold text-xs sm:text-sm py-2.5 px-6 rounded-xl hover:scale-102 transition-all cursor-pointer shadow-sm flex items-center gap-2"
+              >
+                {isSavingSponsor ? 'Đang lưu cấu hình...' : 'Lưu & Trực tiếp Phát hành'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

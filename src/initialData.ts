@@ -41,6 +41,7 @@ export const INITIAL_DOCUMENTS: Document[] = [
     file_url: 'https://drive.google.com/file/d/1_demo_fullstack_web_it/view',
     category_id: 'cat-code',
     created_at: '2026-06-18T08:00:00Z',
+    subject: 'Lập trình',
   },
   {
     id: 'doc-2',
@@ -50,6 +51,7 @@ export const INITIAL_DOCUMENTS: Document[] = [
     file_url: 'https://drive.google.com/file/d/2_demo_ielts_speaking_writing/view',
     category_id: 'cat-foreign',
     created_at: '2026-06-20T10:30:00Z',
+    subject: 'Tiếng Anh/IELTS',
   },
   {
     id: 'doc-3',
@@ -59,6 +61,7 @@ export const INITIAL_DOCUMENTS: Document[] = [
     file_url: 'https://drive.google.com/file/d/3_demo_chinese_hsk_study/view',
     category_id: 'cat-asian',
     created_at: '2026-06-21T15:45:00Z',
+    subject: 'Tiếng Trung',
   },
   {
     id: 'doc-4',
@@ -68,6 +71,7 @@ export const INITIAL_DOCUMENTS: Document[] = [
     file_url: 'https://drive.google.com/file/d/4_demo_ai_machine_learning/view',
     category_id: 'cat-code',
     created_at: '2026-06-19T09:15:00Z',
+    subject: 'Lập trình',
   },
   {
     id: 'doc-5',
@@ -77,5 +81,6 @@ export const INITIAL_DOCUMENTS: Document[] = [
     file_url: 'https://drive.google.com/file/d/5_demo_highschool_math/view',
     category_id: 'cat-school',
     created_at: '2026-06-22T08:20:00Z',
+    subject: 'Toán học',
   },
 ];
