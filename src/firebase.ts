@@ -54,13 +54,7 @@ export async function seedInitialDataIfEmpty() {
 
     const docSnap = await getDocs(collection(db, DOCUMENTS_COLLECTION));
     if (docSnap.empty) {
-      console.log('Seeding initial documents into Firestore...');
-      const batch = writeBatch(db);
-      INITIAL_DOCUMENTS.forEach((docItem) => {
-        const docRef = doc(db, DOCUMENTS_COLLECTION, docItem.id);
-        batch.set(docRef, docItem);
-      });
-      await batch.commit();
+      console.log('Skipping document seeding as requested by user to keep the document library custom-populated only.');
     }
   } catch (err) {
     console.error('Error seeding data into Firestore:', err);

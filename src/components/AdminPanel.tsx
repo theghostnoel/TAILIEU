@@ -115,32 +115,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     if (!file) return;
 
     setIsUploadingEditImage(true);
-    setUploadEditProgress(0);
+    setUploadEditProgress(15);
 
-    const interval = setInterval(() => {
-      setUploadEditProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(interval);
-          return 90;
-        }
-        return prev + 25;
-      });
-    }, 150);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
 
-    setTimeout(() => {
-      clearInterval(interval);
-      setUploadEditProgress(100);
-      
-      const randomImages = [
-        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'
-      ];
-      const assignedUrl = randomImages[Math.floor(Math.random() * randomImages.length)];
-      setEditDocImageUrl(assignedUrl);
+      const interval = setInterval(() => {
+        setUploadEditProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(interval);
+            return 90;
+          }
+          return prev + 25;
+        });
+      }, 100);
+
+      setTimeout(() => {
+        clearInterval(interval);
+        setUploadEditProgress(100);
+        setEditDocImageUrl(dataUrl);
+        setIsUploadingEditImage(false);
+      }, 500);
+    };
+
+    reader.onerror = (err) => {
+      console.error(err);
       setIsUploadingEditImage(false);
-    }, 1100);
+    };
+
+    reader.readAsDataURL(file);
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
@@ -266,34 +270,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setUploadSuccess(false);
     setUploadProgress(15);
 
-    // Simulate Supabase public bucket storage uploading sequence
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(interval);
-          return 90;
-        }
-        return prev + 25;
-      });
-    }, 150);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
 
-    setTimeout(() => {
-      clearInterval(interval);
-      setUploadProgress(100);
-      
-      // Preset dynamic Unsplash mock links to have high-quality rendering in cards
-      const randomImages = [
-        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'
-      ];
-      const assignedUrl = randomImages[Math.floor(Math.random() * randomImages.length)];
-      
-      setNewDocImageUrl(assignedUrl);
+      // Simulate Supabase public bucket storage uploading sequence
+      const interval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(interval);
+            return 90;
+          }
+          return prev + 25;
+        });
+      }, 100);
+
+      setTimeout(() => {
+        clearInterval(interval);
+        setUploadProgress(100);
+        setNewDocImageUrl(dataUrl);
+        setIsUploadingImage(false);
+        setUploadSuccess(true);
+      }, 500);
+    };
+
+    reader.onerror = (err) => {
+      console.error(err);
       setIsUploadingImage(false);
-      setUploadSuccess(true);
-    }, 1100);
+    };
+
+    reader.readAsDataURL(file);
   };
 
   // Add Document Submit Handler
