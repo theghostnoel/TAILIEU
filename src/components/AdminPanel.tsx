@@ -17,6 +17,53 @@ import {
   saveSponsorTextToFirestore
 } from '../firebase';
 
+const compressImageToDataURL = (file: File, maxWidth = 400, maxHeight = 400, quality = 0.655): Promise<string> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl);
+        } else {
+          resolve(event.target?.result as string);
+        }
+      };
+      img.onerror = () => {
+        // Fallback to original reader result on error
+        resolve(event.target?.result as string);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => {
+      resolve('');
+    };
+    reader.readAsDataURL(file);
+  });
+};
+
 interface AdminPanelProps {
   categories: Category[];
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
@@ -117,34 +164,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setIsUploadingEditImage(true);
     setUploadEditProgress(15);
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
+    // Simulate upload interval and apply canvas compression
+    const interval = setInterval(() => {
+      setUploadEditProgress(prev => {
+        if (prev >= 90) {
+          return 90;
+        }
+        return prev + 25;
+      });
+    }, 100);
 
-      const interval = setInterval(() => {
-        setUploadEditProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(interval);
-            return 90;
-          }
-          return prev + 25;
-        });
-      }, 100);
-
-      setTimeout(() => {
-        clearInterval(interval);
-        setUploadEditProgress(100);
-        setEditDocImageUrl(dataUrl);
-        setIsUploadingEditImage(false);
-      }, 500);
-    };
-
-    reader.onerror = (err) => {
-      console.error(err);
+    compressImageToDataURL(file).then((compressedUrl) => {
+      clearInterval(interval);
+      setUploadEditProgress(100);
+      setEditDocImageUrl(compressedUrl);
       setIsUploadingEditImage(false);
-    };
-
-    reader.readAsDataURL(file);
+    }).catch((err) => {
+      console.error('Error compressing image:', err);
+      clearInterval(interval);
+      setIsUploadingEditImage(false);
+    });
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
@@ -270,36 +309,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setUploadSuccess(false);
     setUploadProgress(15);
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
+    // Simulate Supabase public bucket storage uploading sequence with compression loading
+    const interval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 90) {
+          return 90;
+        }
+        return prev + 25;
+      });
+    }, 100);
 
-      // Simulate Supabase public bucket storage uploading sequence
-      const interval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(interval);
-            return 90;
-          }
-          return prev + 25;
-        });
-      }, 100);
-
-      setTimeout(() => {
-        clearInterval(interval);
-        setUploadProgress(100);
-        setNewDocImageUrl(dataUrl);
-        setIsUploadingImage(false);
-        setUploadSuccess(true);
-      }, 500);
-    };
-
-    reader.onerror = (err) => {
-      console.error(err);
+    compressImageToDataURL(file).then((compressedUrl) => {
+      clearInterval(interval);
+      setUploadProgress(100);
+      setNewDocImageUrl(compressedUrl);
       setIsUploadingImage(false);
-    };
-
-    reader.readAsDataURL(file);
+      setUploadSuccess(true);
+    }).catch((err) => {
+      console.error('Error compressing uploaded image:', err);
+      clearInterval(interval);
+      setIsUploadingImage(false);
+    });
   };
 
   // Add Document Submit Handler
