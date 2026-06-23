@@ -28,24 +28,24 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({
   // Smart resolution of Category Community Link:
   // If the category doesn't have a community_link (null or empty),
   // trace back upwards to its parent category to fetch parent's link!
-  const getResolvedCommunityLink = (): string => {
-    if (!currentCategory) return 'https://facebook.com'; // Default safety fallback
+  const getResolvedCommunityLink = (): string | null => {
+    if (!currentCategory) return null;
     
     // Check if current category has a link
     if (currentCategory.community_link && currentCategory.community_link.trim() !== '') {
-      return currentCategory.community_link;
+      return currentCategory.community_link.trim();
     }
 
     // Direct parent search trace
     if (currentCategory.parent_id) {
       const parent = categories.find((c) => c.id === currentCategory.parent_id);
       if (parent && parent.community_link && parent.community_link.trim() !== '') {
-        return parent.community_link;
+        return parent.community_link.trim();
       }
     }
 
-    // Default general group fallback if everything is empty
-    return 'https://facebook.com/groups/congdonghocsinhvietnam-demo';
+    // Completely blank if no link is configured in parent or child
+    return null;
   };
 
   const communityLink = getResolvedCommunityLink();
@@ -59,6 +59,7 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({
     : null;
 
   const handleStep1Click = () => {
+    if (!communityLink) return;
     // Open the resolved community link in a new tab
     window.open(communityLink, '_blank', 'noopener,noreferrer');
     // Instantly transition state to unlock Step 2
@@ -66,7 +67,7 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({
   };
 
   const handleStep2Click = () => {
-    if (!stepCompleted) return;
+    if (communityLink && !stepCompleted) return;
     // Open the real document download link
     window.open(document.file_url, '_blank', 'noopener,noreferrer');
   };
@@ -156,7 +157,7 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({
             <div className="bg-gradient-to-br from-slate-50 to-slate-100/90 border border-slate-200/50 p-4.5 rounded-2xl relative">
               <div className="flex items-center justify-between mb-3.5">
                 <h4 className="text-xs font-bold text-slate-800 tracking-wide uppercase">
-                  Mở khóa tải tài liệu (2 bước)
+                  {communityLink ? 'Mở khóa tải tài liệu (2 bước)' : 'Tải tài liệu trực tiếp'}
                 </h4>
                 <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5">
                   An toàn & Miễn phí
@@ -165,62 +166,66 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({
 
               <div className="space-y-3">
                 {/* Step 1 Button */}
-                {!stepCompleted ? (
-                  <button
-                    id="link-trap-step-1"
-                    onClick={handleStep1Click}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-[0.98] text-white text-xs sm:text-sm font-bold py-3 px-4 rounded-xl shadow-md shadow-blue-500/10 flex items-center justify-center gap-2 group transition-all duration-300 cursor-pointer"
-                  >
-                    <UserPlus className="w-4 h-4 text-blue-100 group-hover:scale-110 transition-transform" />
-                    <span>BƯỚC 1: Tham gia nhóm để mở khóa</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-blue-100 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                ) : (
-                  <div className="bg-emerald-50 text-emerald-800 text-[11px] sm:text-xs font-bold p-3 rounded-xl border border-emerald-100 flex items-center gap-2.5">
-                    <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
-                      ✓
+                {communityLink && (
+                  !stepCompleted ? (
+                    <button
+                      id="link-trap-step-1"
+                      onClick={handleStep1Click}
+                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-[0.98] text-white text-xs sm:text-sm font-bold py-3 px-4 rounded-xl shadow-md shadow-blue-500/10 flex items-center justify-center gap-2 group transition-all duration-300 cursor-pointer"
+                    >
+                      <UserPlus className="w-4 h-4 text-blue-100 group-hover:scale-110 transition-transform" />
+                      <span>BƯỚC 1: Tham gia nhóm để mở khóa</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-blue-100 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  ) : (
+                    <div className="bg-emerald-50 text-emerald-800 text-[11px] sm:text-xs font-bold p-3 rounded-xl border border-emerald-100 flex items-center gap-2.5">
+                      <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                        ✓
+                      </div>
+                      <span>Đã tham gia nhóm liên kết! Đã mở khóa mã tải file.</span>
                     </div>
-                    <span>Đã tham gia nhóm liên kết! Đã mở khóa mã tải file.</span>
-                  </div>
+                  )
                 )}
 
                 {/* Step 2 Button - Disabled default until step 1, illuminated afterward */}
                 <button
                   id="link-trap-step-2"
                   onClick={handleStep2Click}
-                  disabled={!stepCompleted}
+                  disabled={communityLink ? !stepCompleted : false}
                   className={`w-full text-xs sm:text-sm font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 ${
-                    stepCompleted
-                      ? 'bg-slate-900 border border-slate-850 text-white hover:bg-slate-800 active:scale-[0.98] shadow-lg shadow-black/10 cursor-pointer'
+                    (!communityLink || stepCompleted)
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700 active:scale-[0.98] shadow-lg shadow-emerald-500/10 cursor-pointer'
                       : 'bg-slate-200 text-slate-400 border border-slate-300 pointer-events-none opacity-45 cursor-not-allowed'
                   }`}
                 >
-                  <Download className={`w-4 h-4 ${stepCompleted ? 'text-blue-400' : 'text-slate-300'}`} />
-                  <span>BƯỚC 2: Tải Tài Liệu Gốc</span>
-                  <ExternalLink className={`w-3.5 h-3.5 ${stepCompleted ? 'text-blue-400' : 'text-slate-300'}`} />
+                  <Download className="w-4 h-4 text-white" />
+                  <span>{communityLink ? 'BƯỚC 2: Tải Tài Liệu Gốc' : 'Tải Bản Gốc Google Drive / Mega'}</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-white/80" />
                 </button>
               </div>
 
               {/* Informative Note: Show where the link came from for testing transparent validation */}
-              <div className="mt-3.5 flex items-start gap-1.5 text-[10px] text-slate-400 select-none border-t border-slate-200/50 pt-2.5 leading-relaxed">
-                <HelpCircle className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5" />
-                <span className="flex-1">
-                  Nhóm mở khóa đang sử dụng của{' '}
-                  <strong className="text-slate-600 italic">
-                    {currentCategory?.community_link ? 'mục này' : `mục cha (${parentCategory?.name || 'mặc định'})`}
-                  </strong>
-                  :{' '}
-                  <a
-                    href={communityLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-600 underline hover:text-blue-700 font-medium break-all"
-                    title={communityLink}
-                  >
-                    {communityLink}
-                  </a>
-                </span>
-              </div>
+              {communityLink && (
+                <div className="mt-3.5 flex items-start gap-1.5 text-[10px] text-slate-400 select-none border-t border-slate-200/50 pt-2.5 leading-relaxed">
+                  <HelpCircle className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5" />
+                  <span className="flex-1">
+                    Nhóm mở khóa đang sử dụng của{' '}
+                    <strong className="text-slate-605 italic">
+                      {currentCategory?.community_link ? 'mục này' : `mục cha (${parentCategory?.name || 'mặc định'})`}
+                    </strong>
+                    :{' '}
+                    <a
+                      href={communityLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-600 underline hover:text-blue-700 font-medium break-all"
+                      title={communityLink}
+                    >
+                      {communityLink}
+                    </a>
+                  </span>
+                </div>
+              )}
             </div>
 
           </div>
