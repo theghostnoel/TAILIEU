@@ -475,31 +475,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <input
                     id="new-category-name"
                     type="text"
-                    placeholder="Nhập tên khóa học / tên lớp..."
+                    placeholder="Nhập tên danh mục tài liệu..."
                     value={newCatName}
                     onChange={(e) => setNewCatName(e.target.value)}
                     className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-350"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-705 mb-1 text-slate-600">
-                    Thuộc nhóm cha lớn (Nếu có)
-                  </label>
-                  <select
-                    id="new-category-parent"
-                    value={newCatParentId}
-                    onChange={(e) => setNewCatParentId(e.target.value)}
-                    className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all text-slate-800"
-                  >
-                    <option value="">-- Chọn danh mục cha (Để trống nếu tự làm Cha lớn) --</option>
-                    {parentCategories.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                  <span className="text-[10px] text-slate-400 mt-1 leading-normal block">
-                    Mẹo: Danh mục con không có link bẫy sẽ tự động kế thừa và bẫy link từ danh mục cha đã chọn ở đây.
-                  </span>
                 </div>
 
                 <div>
@@ -514,9 +494,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     onChange={(e) => setNewCatCommunityLink(e.target.value)}
                     className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
                   />
-                  <span className="text-[10px] text-slate-400 mt-1 leading-normal block italic">
-                    (Có thể bỏ trống đối với danh mục con để kế thừa bẫy từ danh mục cha nhằm tránh tốn tài nguyên quản lý)
-                  </span>
                 </div>
 
                 {catMessage && (
@@ -544,78 +521,38 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
               <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
                 <FolderPlus className="w-5 h-5 text-indigo-600" />
-                <span>Sơ đồ danh mục hiện tại</span>
+                <span>Danh mục hiện tại</span>
               </h2>
 
               <div className="space-y-4">
-                {parentCategories.length === 0 ? (
+                {categories.length === 0 ? (
                   <div className="text-center py-8 text-xs text-slate-400 font-semibold">
-                    Chưa có danh mục cha nào được khởi tạo.
+                    Chưa có danh mục nào được khởi tạo.
                   </div>
                 ) : (
-                  parentCategories.map(parent => {
-                    const subCats = categories.filter(c => c.parent_id === parent.id);
+                  categories.map(cat => {
+                    const docCount = documents.filter(d => d.category_id === cat.id).length;
                     return (
-                      <div key={parent.id} className="border border-slate-100 rounded-2xl p-4 bg-slate-50/50">
-                        
-                        {/* Parent row item */}
-                        <div className="flex items-center justify-between gap-4 pb-2 border-b border-slate-200/50">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-bold text-slate-950 flex items-center gap-1.5">
-                              📁 {parent.name}
-                              <span className="text-[10px] bg-slate-100 border border-slate-200 text-slate-500 font-bold px-1.5 py-0.3 rounded">
-                                Cha lớn
-                              </span>
+                      <div key={cat.id} className="border border-slate-100 rounded-2xl p-4 bg-slate-50/50 hover:bg-slate-50 transition-all flex items-center justify-between gap-4">
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span className="text-sm font-bold text-slate-950 flex items-center gap-1.5 flex-wrap">
+                            📁 {cat.name}
+                            <span className="text-[10px] bg-blue-100 border border-blue-200 text-blue-700 font-bold px-1.5 py-0.5 rounded">
+                              {docCount} tài liệu
                             </span>
-                            <span className="text-[10.5px] text-slate-450 font-mono text-slate-500 mt-0.5 truncate max-w-sm">
-                              Link: {parent.community_link || 'Chưa cấu hình'}
-                            </span>
-                          </div>
-
-                          <button
-                            onClick={() => handleDeleteCategory(parent.id, parent.name)}
-                            className="p-1 px-2 hover:bg-rose-50 text-slate-400 hover:text-red-500 text-xs font-semibold rounded-lg border border-transparent hover:border-red-150 transition-all cursor-pointer"
-                            title="Xoá cả nhóm cha"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          </span>
+                          <span className="text-[10.5px] text-slate-500 font-mono mt-1 truncate">
+                            Link bẫy: <a href={cat.community_link || '#'} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{cat.community_link || 'Chưa cấu hình'}</a>
+                          </span>
                         </div>
 
-                        {/* Children list inside parent */}
-                        <div className="mt-2.5 pl-6 space-y-2">
-                          {subCats.length === 0 ? (
-                            <span className="text-[10.5px] italic text-slate-400 inline-block">
-                              Chưa có danh mục con (môn học chuyên đề) trực thuộc.
-                            </span>
-                          ) : (
-                            subCats.map(child => (
-                              <div key={child.id} className="flex items-center justify-between gap-3 text-xs p-2 bg-white rounded-xl border border-slate-150/50 hover:border-slate-200 transition-all">
-                                <div className="flex flex-col truncate">
-                                  <span className="font-semibold text-slate-800 flex items-center gap-1.5">
-                                    <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                    {child.name}
-                                  </span>
-                                  <span className="text-[10px] text-slate-500 mt-0.5 max-w-xs truncate font-mono">
-                                    {child.community_link ? (
-                                      `Link riêng: ${child.community_link}`
-                                    ) : (
-                                      <span className="text-slate-400 italic">Kế thừa: Nhóm cha ({parent.name})</span>
-                                    )}
-                                  </span>
-                                </div>
-
-                                <button
-                                  onClick={() => handleDeleteCategory(child.id, child.name)}
-                                  className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50/50 rounded-md transition-all cursor-pointer"
-                                  title="Xoá danh mục con"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            ))
-                          )}
-                        </div>
-
+                        <button
+                          onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                          className="p-2 hover:bg-rose-50 text-slate-400 hover:text-red-500 rounded-xl border border-transparent hover:border-red-150 transition-all cursor-pointer shrink-0"
+                          title="Xoá danh mục"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     );
                   })
@@ -656,9 +593,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     />
                   </div>
 
-                  <div>
+                   <div>
                     <label className="block text-xs font-bold text-slate-705 mb-1 text-slate-600">
-                      Phân loại chuyên đề môn học (Mục con thứ cấp)*
+                      Phân loại danh mục tài liệu*
                     </label>
                     <select
                       id="edit-document-category"
@@ -667,15 +604,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       onChange={(e) => setEditDocCategoryId(e.target.value)}
                       className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all text-slate-800"
                     >
-                      <option value="">-- Chọn môn học chuyên đề --</option>
-                      {categories.map(c => {
-                        const parent = c.parent_id ? categories.find(p => p.id === c.parent_id) : null;
-                        return (
-                          <option key={c.id} value={c.id}>
-                            {parent ? `[${parent.name}] - ` : ''}{c.name}
-                          </option>
-                        );
-                      })}
+                      <option value="">-- Chọn danh mục tài liệu --</option>
+                      {categories.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -817,7 +751,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                   <div>
                     <label className="block text-xs font-bold text-slate-705 mb-1 text-slate-600">
-                      Phân loại chuyên đề môn học (Mục con thứ cấp)*
+                      Phân loại danh mục tài liệu*
                     </label>
                     <select
                       id="new-document-category"
@@ -826,15 +760,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       onChange={(e) => setNewDocCategoryId(e.target.value)}
                       className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all text-slate-800"
                     >
-                      <option value="">-- Chọn môn học chuyên đề --</option>
-                      {categories.map(c => {
-                        const parent = c.parent_id ? categories.find(p => p.id === c.parent_id) : null;
-                        return (
-                          <option key={c.id} value={c.id}>
-                            {parent ? `[${parent.name}] - ` : ''}{c.name}
-                          </option>
-                        );
-                      })}
+                      <option value="">-- Chọn danh mục tài liệu --</option>
+                      {categories.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 

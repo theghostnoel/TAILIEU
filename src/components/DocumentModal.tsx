@@ -118,36 +118,36 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({
           </div>
 
           {/* Details & Action Content */}
-          <div className="md:w-7/12 p-6 flex flex-col justify-between">
+          <div className="md:w-7/12 p-6 flex flex-col justify-between min-w-0">
             <div>
               {/* Parent category trace badge */}
               {parentCategory && (
-                <div className="flex items-center gap-1.5 text-xs text-blue-600 font-semibold mb-1">
-                  <Compass className="w-3.5 h-3.5" />
-                  <span>{parentCategory.name}</span>
-                  <span>/</span>
-                  <span className="text-slate-500">{categoryName}</span>
+                <div className="flex flex-wrap items-center gap-1.5 text-xs text-blue-600 font-semibold mb-1.5 break-words [word-break:break-word]">
+                  <Compass className="w-3.5 h-3.5 shrink-0" />
+                  <span className="break-words">{parentCategory.name}</span>
+                  <span className="text-slate-400">/</span>
+                  <span className="text-slate-500 break-words">{categoryName}</span>
                 </div>
               )}
 
               {/* Title */}
-              <h2 className="text-lg sm:text-xl font-bold text-slate-950 leading-tight">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-950 leading-tight break-words [word-break:break-word]">
                 {document.title}
               </h2>
 
-              <div className="flex items-center gap-4 text-xs text-slate-400 mt-2.5 mb-4 font-medium">
-                <div className="flex items-center gap-1">
+              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 mt-2.5 mb-4 font-medium">
+                <div className="flex items-center gap-1 shrink-0">
                   <Calendar className="w-3.5 h-3.5" />
                   <span>22/06/2026</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <FileText className="w-3.5 h-3.5 text-slate-400" />
+                  <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <span>Định dạng: Google Drive / PDF</span>
                 </div>
               </div>
 
               {/* Description */}
-              <p className="text-xs sm:text-sm text-slate-650 leading-relaxed mb-6 line-clamp-4">
+              <p className="text-xs sm:text-sm text-slate-605 leading-relaxed mb-6 line-clamp-4 break-words [word-break:break-word]">
                 {document.description}
               </p>
             </div>
@@ -214,7 +214,7 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({
                     href={communityLink}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-blue-600 underline hover:text-blue-700 font-medium truncate inline-block max-w-[200px]"
+                    className="text-blue-600 underline hover:text-blue-700 font-medium break-all"
                     title={communityLink}
                   >
                     {communityLink}

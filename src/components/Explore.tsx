@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Document, Category } from '../types';
-import { Search, Filter, BookOpen, ChevronRight, Eye, RefreshCw, Layers, Compass } from 'lucide-react';
+import { Search, Filter, BookOpen, ChevronRight, ChevronLeft, Eye, RefreshCw, Layers, Compass } from 'lucide-react';
 
 interface ExploreProps {
   documents: Document[];
@@ -23,27 +23,17 @@ export const Explore: React.FC<ExploreProps> = ({
   onSelectDocument,
 }) => {
   // Filter variables
-  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
-  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const ITEMS_PER_PAGE = 15;
+
   // Track image load errors to render clean dynamic fallbacks
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
-  // Extract separate parent (e.g. parent_id === null) and child categories
-  const parentCategories = useMemo(() => {
-    return categories.filter((c) => c.parent_id === null);
-  }, [categories]);
-
-  // Children of the currently selected parent folder
-  const childCategories = useMemo(() => {
-    if (!selectedParentId) return [];
-    return categories.filter((c) => c.parent_id === selectedParentId);
-  }, [categories, selectedParentId]);
-
-  // Handle select parent category
-  const handleParentSelect = (id: string | null) => {
-    setSelectedParentId(id);
-    setSelectedChildId(null); // Reset child selection when parent shifts
-  };
+  // Reset page to 1 whenever filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategoryId, searchQuery]);
 
   // Filtered documents list
   const filteredDocuments = useMemo(() => {
@@ -56,31 +46,27 @@ export const Explore: React.FC<ExploreProps> = ({
         if (!matchesTitle && !matchesDesc) return false;
       }
 
-      // 2. Filter by Parent Categories
-      if (selectedParentId) {
-        // Find if this doc's category is either the parent itself, or is a child of this parent
-        const docCat = categories.find((c) => c.id === doc.category_id);
-        if (!docCat) return false;
-
-        if (selectedChildId) {
-          // Both parent and child specified
-          return doc.category_id === selectedChildId;
-        } else {
-          // Only parent specified
-          const isDirectParent = doc.category_id === selectedParentId;
-          const isChildOfSelected = docCat.parent_id === selectedParentId;
-          return isDirectParent || isChildOfSelected;
-        }
+      // 2. Filter by Category ID
+      if (selectedCategoryId) {
+        return doc.category_id === selectedCategoryId;
       }
 
       return true;
     });
-  }, [documents, categories, searchQuery, selectedParentId, selectedChildId]);
+  }, [documents, searchQuery, selectedCategoryId]);
+
+  const totalPages = Math.ceil(filteredDocuments.length / ITEMS_PER_PAGE);
+
+  // Paginated chunk of documents
+  const paginatedDocuments = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredDocuments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredDocuments, currentPage]);
 
   const handleClearFilters = () => {
-    setSelectedParentId(null);
-    setSelectedChildId(null);
+    setSelectedCategoryId(null);
     setSearchQuery('');
+    setCurrentPage(1);
   };
 
   return (
@@ -105,49 +91,46 @@ export const Explore: React.FC<ExploreProps> = ({
         {/* Left Filter Sidebar */}
         <aside className="w-full lg:w-64 shrink-0 space-y-6">
           
-          {/* Parent categories selectors */}
+          {/* Categories selectors */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
             <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4 px-1 flex items-center gap-1.5 leading-none">
               <Layers className="w-3.5 h-3.5 text-slate-400" />
-              <span>Danh Mục Lớn</span>
+              <span>Danh Mục Tài Liệu</span>
             </h3>
 
-            <div className="space-y-1">
+            <div className="space-y-1 max-h-[380px] overflow-y-auto pr-1">
               <button
-                onClick={() => handleParentSelect(null)}
+                onClick={() => setSelectedCategoryId(null)}
                 className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-between cursor-pointer ${
-                  selectedParentId === null
+                  selectedCategoryId === null
                     ? 'bg-blue-50 text-blue-700 font-bold border border-blue-100 shadow-sm'
-                    : 'text-slate-605 text-slate-600 hover:bg-slate-50'
+                    : 'text-slate-600 hover:bg-slate-50'
                 }`}
               >
                 <span>Tất cả danh mục</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                  selectedParentId === null ? 'bg-blue-200 text-blue-800' : 'bg-slate-100 text-slate-500'
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                  selectedCategoryId === null ? 'bg-blue-200 text-blue-800' : 'bg-slate-100 text-slate-500'
                 }`}>
                   {documents.length}
                 </span>
               </button>
 
-              {parentCategories.map((parent) => {
-                const docCount = documents.filter(d => {
-                  const cat = categories.find(c => c.id === d.category_id);
-                  return d.category_id === parent.id || (cat && cat.parent_id === parent.id);
-                }).length;
+              {categories.map((cat) => {
+                const docCount = documents.filter(d => d.category_id === cat.id).length;
 
                 return (
                   <button
-                    key={parent.id}
-                    onClick={() => handleParentSelect(parent.id)}
+                    key={cat.id}
+                    onClick={() => setSelectedCategoryId(cat.id)}
                     className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-between gap-2 cursor-pointer ${
-                      selectedParentId === parent.id
+                      selectedCategoryId === cat.id
                         ? 'bg-blue-50 text-blue-700 font-bold border border-blue-100 shadow-sm'
                         : 'text-slate-600 hover:bg-slate-50'
                     }`}
                   >
-                    <span className="truncate text-left flex-1 min-w-0" title={parent.name}>{parent.name}</span>
+                    <span className="truncate text-left flex-1 min-w-0" title={cat.name}>{cat.name}</span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold shrink-0 ${
-                      selectedParentId === parent.id ? 'bg-blue-200 text-blue-800' : 'bg-slate-100 text-slate-500'
+                      selectedCategoryId === cat.id ? 'bg-blue-200 text-blue-800' : 'bg-slate-100 text-slate-500'
                     }`}>
                       {docCount}
                     </span>
@@ -156,47 +139,6 @@ export const Explore: React.FC<ExploreProps> = ({
               })}
             </div>
           </div>
-
-          {/* Child Subject Categories pills list - active if parent selected */}
-          {selectedParentId && childCategories.length > 0 && (
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
-              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5 leading-none">
-                <Compass className="w-3.5 h-3.5 text-slate-400" />
-                <span>Chuyên đề chi tiết</span>
-              </h3>
-
-              <div className="flex flex-wrap lg:flex-col gap-1">
-                <button
-                  onClick={() => setSelectedChildId(null)}
-                  className={`text-left px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                    selectedChildId === null
-                      ? 'bg-slate-100 text-slate-800 font-semibold'
-                      : 'text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  Tất cả nhóm con
-                </button>
-
-                {childCategories.map((child) => {
-                  const childCount = documents.filter(d => d.category_id === child.id).length;
-                  return (
-                    <button
-                      key={child.id}
-                      onClick={() => setSelectedChildId(child.id)}
-                      className={`text-left px-3 py-2 rounded-lg text-xs transition-all flex items-center justify-between gap-2 w-full cursor-pointer ${
-                        selectedChildId === child.id
-                          ? 'bg-indigo-50 border border-indigo-150 text-indigo-700 font-semibold shadow-sm'
-                          : 'text-slate-600 hover:bg-slate-50 border border-transparent'
-                      }`}
-                    >
-                      <span className="truncate text-left flex-1 min-w-0" title={child.name}>{child.name}</span>
-                      <span className="text-[10px] text-slate-400 font-mono shrink-0 font-medium">({childCount})</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           {/* High Density Community Quick Joint card */}
           <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-5 rounded-2xl border border-indigo-100">
@@ -225,14 +167,13 @@ export const Explore: React.FC<ExploreProps> = ({
                 Tìm thấy {filteredDocuments.length} tài liệu học tập
               </span>
               <h2 className="text-lg font-bold text-slate-900 mt-0.5">
-                {selectedParentId 
-                  ? parentCategories.find(p => p.id === selectedParentId)?.name 
+                {selectedCategoryId 
+                  ? categories.find(c => c.id === selectedCategoryId)?.name 
                   : 'Tất cả tài liệu'}
-                {selectedChildId && ` / ${categories.find(c => c.id === selectedChildId)?.name}`}
               </h2>
             </div>
 
-            {(selectedParentId || searchQuery) && (
+            {(selectedCategoryId || searchQuery) && (
               <button
                 onClick={handleClearFilters}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-blue-600 hover:text-blue-800 font-semibold bg-blue-50/50 hover:bg-blue-100/60 rounded-lg transition-all cursor-pointer"
@@ -261,106 +202,127 @@ export const Explore: React.FC<ExploreProps> = ({
               </button>
             </div>
           ) : (
-            // Cards Grid List
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredDocuments.map((doc, idx) => {
-                const category = categories.find((c) => c.id === doc.category_id);
-                // Simulated size & page metadata based on card index to fulfill high density telemetry specifications
-                const fileFormat = doc.file_url.includes('drive') ? 'PDF' : 'DOCX';
-                const filePageAndProgress = idx === 0 
-                  ? '15.2 MB • 24 trang' 
-                  : idx === 1 
-                  ? '8.5 MB • 42 trang' 
-                  : idx === 2 
-                  ? '6.4 MB • 18 trang' 
-                  : '3.1 MB • 12 trang';
+            <>
+              {/* Cards Grid List */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                {paginatedDocuments.map((doc, idx) => {
+                  const category = categories.find((c) => c.id === doc.category_id);
+                  const fileFormat = doc.file_url.includes('drive') ? 'PDF' : 'DOCX';
+                  const pagesCount = 12 + (idx * 6) % 35;
+                  const filePageAndProgress = `4.5 MB • ${pagesCount} trang`;
 
-                // Optional highlights for the primary selected look
-                const isFeaturedStyle = idx === 1;
+                  return (
+                    <div
+                      key={doc.id}
+                      onClick={() => onSelectDocument(doc)}
+                      className="group bg-white rounded-2xl p-4 border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-500/30 transition-all duration-300 cursor-pointer flex flex-col justify-between"
+                    >
+                      {/* Upper Thumbnail Section */}
+                      <div className="relative h-40 w-full bg-slate-100 rounded-xl overflow-hidden mb-3 flex items-center justify-center">
+                        {doc.image_url && !imageErrors[doc.id] ? (
+                          <img
+                            src={doc.image_url}
+                            alt=""
+                            referrerPolicy="no-referrer"
+                            onError={() => setImageErrors(prev => ({ ...prev, [doc.id]: true }))}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-tr from-slate-100 via-indigo-50/40 to-blue-50/50 flex flex-col items-center justify-center text-slate-400 p-4 gap-2 border border-slate-100 rounded-xl">
+                            <BookOpen className="w-10 h-10 text-indigo-400/80 animate-pulse duration-2000" />
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider text-center line-clamp-1 max-w-[85%]">
+                              {category ? category.name : 'Tài liệu học tập'}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* Floating Category Tag */}
+                        <span 
+                          className="absolute top-2 left-2 bg-white/95 backdrop-blur-sm shadow-sm text-slate-800 text-[9px] font-extrabold px-2 py-1 rounded uppercase tracking-wider border border-slate-150 max-w-[70%] inline-block truncate"
+                          title={category ? category.name : 'Miễn phí'}
+                        >
+                          {category ? category.name : 'Miễn phí'}
+                        </span>
 
-                return (
-                  <div
-                    key={doc.id}
-                    onClick={() => onSelectDocument(doc)}
-                    className={`group bg-white rounded-2xl p-4 border transition-all duration-300 cursor-pointer flex flex-col justify-between ${
-                      isFeaturedStyle 
-                        ? 'border-2 border-indigo-500 shadow-md relative translate-y-[-2px]' 
-                        : 'border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-500/30'
-                    }`}
-                  >
-                    {isFeaturedStyle && (
-                      <div className="absolute -top-3 right-4 bg-indigo-600 text-white text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm z-10">
-                        Nổi bật
+                        {/* Floating Format tag */}
+                        <span className="absolute bottom-2 right-2 bg-slate-900/85 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase font-mono">
+                          {fileFormat}
+                        </span>
                       </div>
-                    )}
-                    
-                    {/* Upper Thumbnail Section */}
-                    <div className="relative h-40 w-full bg-slate-100 rounded-xl overflow-hidden mb-3 flex items-center justify-center">
-                      {doc.image_url && !imageErrors[doc.id] ? (
-                        <img
-                          src={doc.image_url}
-                          alt=""
-                          referrerPolicy="no-referrer"
-                          onError={() => setImageErrors(prev => ({ ...prev, [doc.id]: true }))}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-tr from-slate-100 via-indigo-50/40 to-blue-50/50 flex flex-col items-center justify-center text-slate-400 p-4 gap-2 border border-slate-100 rounded-xl">
-                          <BookOpen className="w-10 h-10 text-indigo-400/80 animate-pulse duration-2000" />
-                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider text-center line-clamp-1 max-w-[85%]">
-                            {category ? category.name : 'Tài liệu học tập'}
+
+                      {/* Lower Description Section */}
+                      <div className="flex flex-col justify-between flex-1">
+                        <div className="space-y-1.5 mb-3.5">
+                          <h4 className="font-extrabold text-slate-900 text-xs sm:text-[13.5px] leading-snug group-hover:text-blue-600 transition-colors line-clamp-1">
+                            {doc.title}
+                          </h4>
+                          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                            {doc.description}
+                          </p>
+                        </div>
+
+                        {/* CTA action bottom */}
+                        <div className="flex items-center justify-between border-t border-slate-100 pt-3 mt-auto">
+                          <span className="text-[11px] text-slate-400 font-medium">
+                            {filePageAndProgress}
+                          </span>
+                          
+                          <span className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 group-hover:text-indigo-800">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-ping"></span>
+                            <span>Free</span>
                           </span>
                         </div>
-                      )}
-                      
-                      {/* Floating Category Tag */}
-                      <span 
-                        className="absolute top-2 left-2 bg-white/95 backdrop-blur-sm shadow-sm text-slate-800 text-[9px] font-extrabold px-2 py-1 rounded uppercase tracking-wider border border-slate-150 max-w-[70%] inline-block truncate"
-                        title={category ? category.name : 'Miễn phí'}
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="mt-10 flex items-center justify-between border-t border-slate-100 pt-6">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="flex items-center gap-1 px-3 py-2 text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:hover:text-slate-600 disabled:hover:bg-slate-50 rounded-xl transition-all border border-slate-200/50 cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span>Trang trước</span>
+                  </button>
+                  
+                  <div className="flex items-center gap-1.5">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`min-w-[32px] h-8 text-xs font-bold rounded-lg transition-all flex items-center justify-center cursor-pointer ${
+                          currentPage === page
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'text-slate-600 hover:bg-slate-50 border border-transparent hover:border-slate-100'
+                        }`}
                       >
-                        {category ? category.name : 'Miễn phí'}
-                      </span>
-
-                      {/* Floating Format tag */}
-                      <span className="absolute bottom-2 right-2 bg-slate-900/85 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase font-mono">
-                        {fileFormat}
-                      </span>
-                    </div>
-
-                    {/* Lower Description Section */}
-                    <div className="flex flex-col justify-between flex-1">
-                      <div className="space-y-1.5 mb-3.5">
-                        <h4 className="font-extrabold text-slate-900 text-xs sm:text-[13.5px] leading-snug group-hover:text-blue-600 transition-colors line-clamp-1">
-                          {doc.title}
-                        </h4>
-                        <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                          {doc.description}
-                        </p>
-                      </div>
-
-                      {/* CTA action bottom */}
-                      <div className="flex items-center justify-between border-t border-slate-100 pt-3 mt-auto">
-                        <span className="text-[11px] text-slate-400 font-medium">
-                          {filePageAndProgress}
-                        </span>
-                        
-                        <span className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 group-hover:text-indigo-800">
-                          <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-ping"></span>
-                          <span>Free</span>
-                        </span>
-                      </div>
-                    </div>
-
+                        {page}
+                      </button>
+                    ))}
                   </div>
-                );
-              })}
-            </div>
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center gap-1 px-3 py-2 text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:hover:text-slate-600 disabled:hover:bg-slate-50 rounded-xl transition-all border border-slate-200/50 cursor-pointer"
+                  >
+                    <span>Trang sau</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </>
           )}
 
         </main>
 
       </div>
-
     </div>
   );
 };
