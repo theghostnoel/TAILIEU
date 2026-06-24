@@ -17,6 +17,7 @@ import {
   subscribeSponsorText
 } from './firebase';
 import { BookOpen, Sparkles, FolderDown, Zap, Users } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<'explore' | 'admin'>('explore');
@@ -240,6 +241,7 @@ export default function App() {
         </div>
       </footer>
 
+      <Analytics />
     </div>
   );
 }
