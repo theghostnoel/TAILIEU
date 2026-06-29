@@ -5,6 +5,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Category, Document } from '../types';
+import { DEFAULT_COVER } from './defaultCover';
 import { 
   ShieldAlert, LogIn, Plus, Trash2, FolderPlus, FilePlus, Sparkles, Megaphone,
   HelpCircle, Image as ImageIcon, Link2, FileText, CheckCircle2, ChevronRight, X, Edit3
@@ -251,7 +252,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       const updated: Document = {
         ...docToUpdate,
         title: editDocTitle.trim(),
-        description: editDocDesc.trim(),
+        description: editDocDesc.trim() || editDocTitle.trim(),
         category_id: editDocCategoryId,
         image_url: editDocImageUrl.trim(),
         file_url: editDocFileUrl.trim(),
@@ -394,18 +395,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       return;
     }
 
-    const defaultImages = [
-      'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
-      'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
-      'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
-      'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'
-    ];
-
     const newDocument: Document = {
       id: 'doc-' + Math.random().toString(36).substr(2, 9),
       title: newDocTitle.trim(),
-      description: newDocDesc.trim() || 'Tài liệu hướng dẫn tự học chuẩn kiến thức thi THPT và thi học kỳ.',
-      image_url: newDocImageUrl.trim() || defaultImages[Math.floor(Math.random() * defaultImages.length)],
+      description: newDocDesc.trim() || newDocTitle.trim(),
+      image_url: newDocImageUrl.trim() || DEFAULT_COVER,
       file_url: newDocFileUrl.trim(),
       category_id: newDocCategoryId,
       created_at: new Date().toISOString(),
@@ -820,7 +814,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <textarea
                       id="edit-document-description"
                       rows={3}
-                      placeholder="Tài liệu tự học ôn luyện chuyên sâu, tóm tắt công thức và sơ đồ tự duy..."
+                      placeholder="Nhập mô tả hoặc để trống để hệ thống tự động lấy tiêu đề tài liệu làm mô tả..."
                       value={editDocDesc}
                       onChange={(e) => setEditDocDesc(e.target.value)}
                       className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-350"
@@ -990,7 +984,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <textarea
                       id="new-document-description"
                       rows={3}
-                      placeholder="Tài liệu tự học ôn luyện chuyên sâu, tóm tắt công thức và sơ đồ tư duy..."
+                      placeholder="Nhập mô tả hoặc để trống để hệ thống tự động lấy tiêu đề tài liệu làm mô tả..."
                       value={newDocDesc}
                       onChange={(e) => setNewDocDesc(e.target.value)}
                       className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-350"
